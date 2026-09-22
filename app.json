@@ -1,6 +1,5 @@
 {
   "expo": {
-    
     "name": "SRS News",
     "slug": "srs-news-native",
     "version": "1.0.0",
@@ -36,7 +35,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -48,6 +48,5 @@
         "projectId": "a90b4d57-aa11-40f4-b8ec-e0f64803c2ed"
       }
     }
-
   }
 }
