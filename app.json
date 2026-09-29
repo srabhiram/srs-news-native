@@ -7,13 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "srs-news",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.srsnews"
     },
     "android": {
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.srsnews"
     },
@@ -36,7 +34,10 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,
