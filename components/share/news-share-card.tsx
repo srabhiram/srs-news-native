@@ -31,7 +31,7 @@ export const NewsShareCard = forwardRef<View, Props>(function NewsShareCard(p, r
       <View style={styles.copy}>
         <Text allowFontScaling={false} onLayout={e => p.onTextHeight('title', e.nativeEvent.layout.height)}
           style={styles.title}>{p.article.news_title}</Text>
-        <Text allowFontScaling={false} onLayout={e => p.onTextHeight('description', e.nativeEvent.layout.height)}
+        <Text key={p.description} allowFontScaling={false} onLayout={e => p.onTextHeight('description', e.nativeEvent.layout.height)}
           style={styles.description}>{p.description}</Text>
         <View style={styles.footer}>
           <Text allowFontScaling={false} style={styles.meta}>{p.label} · {p.published}</Text>
