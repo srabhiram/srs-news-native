@@ -4,7 +4,7 @@ import { NewsState } from "./news-type";
 
 const initialState: NewsState = {
   list: {},
-  single: {},
+  single: [],
   listLoading: {},
   listError: {},
   loading: false,
@@ -21,7 +21,7 @@ const newsSlice = createSlice({
       state.listError[key] = null
     },
     clearSingleNews(state) {
-      state.single = {};
+      state.single = [];
     },
   },
   extraReducers: (builder) => {
@@ -44,15 +44,21 @@ const newsSlice = createSlice({
       })
 
       // SINGLE
-      .addCase(fetchSingleNewsThunk.pending, (state) => {
+      .addCase(fetchSingleNewsThunk.pending, (state, action) => {
         state.loading = true;
+        state.error = null;
+        state.single = [];
+        state.singleRequestId = action.meta.requestId;
       })
       .addCase(fetchSingleNewsThunk.fulfilled, (state, action) => {
+        if (state.singleRequestId !== action.meta.requestId) return;
         state.loading = false;
         state.single = action.payload.data;
       })
       .addCase(fetchSingleNewsThunk.rejected, (state, action) => {
+        if (state.singleRequestId !== action.meta.requestId) return;
         state.loading = false;
+        state.single = [];
         state.error = action.payload as string;
       });
   },

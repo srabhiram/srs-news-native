@@ -20,7 +20,8 @@ export interface NewsItem {
 
 export interface NewsState {
   list: Record<string, NewsItem[]>;
-  single: Record<string, NewsItem>;
+  single: NewsItem[];
+  singleRequestId?: string;
   listLoading: Record<string, boolean>;
   loading: boolean;
   listError: Record<string, string | null>;

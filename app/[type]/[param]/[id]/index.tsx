@@ -1,3 +1,6 @@
+import { NewsSharePreview, type ShareSnapshot } from "@/components/share/news-share-preview";
+import { articleUrl } from "@/libs/article-url";
+import { shareDescription } from "@/libs/share-description";
 import SingleScreenLoader from "@/components/skeleton/single-screen-loader";
 import YoutubePlay from "@/components/youtube-player";
 import useViewTracker from "@/hooks/useViewsTracker";
@@ -8,7 +11,7 @@ import { format, parseISO } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import { Eye } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
@@ -49,30 +52,35 @@ const markdownRules = {
 /* Screen */
 /* ---------------------------------- */
 const SingleNewsId = () => {
-  const params: any = useLocalSearchParams();
+  const params = useLocalSearchParams<{ type: string; param: string; id: string }>();
+  const routeType = Array.isArray(params.type) ? params.type[0] : params.type;
+  const routeParam = Array.isArray(params.param) ? params.param[0] : params.param;
+  const routeId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [shareSnapshot, setShareSnapshot] = useState<ShareSnapshot | null>(null);
   const [views,setViews] = useState(0)
   const dispatch = useDispatch<AppDispatch>();
-  const { single, loading } = useSelector((s: Rootstate) => s.news);
-  const data = single[0];
+  const { single, loading, error } = useSelector((s: Rootstate) => s.news);
+  const data = single.find(article => String(article.id) === routeId);
+  useEffect(() => { setShareSnapshot(null); }, [routeId, routeType, routeParam]);
   /* Fetch News */
   useEffect(() => {
-    if (params.type && params.param && params.id) {
+    if (routeType && routeParam && routeId) {
       dispatch(
         fetchSingleNewsThunk({
-          type: params.type,
-          param: params.param,
-          newsId: params.id,
+          type: routeType,
+          param: routeParam,
+          newsId: routeId,
           content: true,
         })
       );
     }
-  }, [dispatch, params.type, params.param, params.id]);
-useViewTracker(params.id,setViews)
+  }, [dispatch, routeType, routeParam, routeId]);
+useViewTracker(routeId,setViews)
   /* Memoized Content */
   const content = useMemo(
     () =>
       data?.content_1
-        ? `${data.content_1}\n\n${data.content_2}`
+        ? `${data.content_1}\n\n${data.content_2 || ""}`
         : data?.content ?? "",
     [data]
   );
@@ -134,9 +142,18 @@ useViewTracker(params.id,setViews)
             <Text className="text-base text-gray-500 mb-4">
 {format(parseISO(data.created_at), "dd MMM yyyy")}
             </Text>
-            <Text>
-              Share
-            </Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Share article as image"
+              disabled={loading || !!error || !data || String(data.id) !== routeId}
+              onPress={() => {
+                try {
+                  setShareSnapshot({ article: { ...data }, url: articleUrl(routeType, routeParam, routeId),
+                    description: shareDescription(content) });
+                } catch (e) {
+                  Alert.alert("Cannot share", e instanceof Error ? e.message : "No article link available.");
+                }
+              }} style={{ padding: 12 }}>
+              <Text>Share</Text>
+            </Pressable>
           </View>
           {/* Category / District */}
           <Text className="text-xl font-bold text-gray-800 leading-10 mb-3">
@@ -153,6 +170,8 @@ useViewTracker(params.id,setViews)
           </Markdown>
         </View>
       </ScrollView>
+      {shareSnapshot && <NewsSharePreview key={`${shareSnapshot.article.id}-${shareSnapshot.url}`}
+        snapshot={shareSnapshot} onClose={() => setShareSnapshot(null)} />}
     </SafeAreaView>
   );
 };
