@@ -11,15 +11,7 @@ function text(tokens: Token[]): string {
   }).join('');
 }
 
-/** Extract whole words, not a generated summary or a cut Telugu grapheme. Review in preview. */
-export function shareDescription(body: string, limit = 180): string {
-  const plain = text(parser.parse(body, {})).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  const words = plain.split(' ');
-  const selected: string[] = [];
-  for (const word of words) {
-    if (selected.length && [...selected, word].join(' ').length > limit) break;
-    selected.push(word);
-  }
-  return selected.join(' ');
+/** Plain article text. The card handles truncation using its available line count. */
+export function shareDescription(body: string): string {
+  return text(parser.parse(body, {})).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
-
