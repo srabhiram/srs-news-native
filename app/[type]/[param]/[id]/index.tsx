@@ -1,4 +1,4 @@
-import { NewsSharePreview, type ShareSnapshot } from "@/components/share/news-share-preview";
+import { ArticleShareRunner, type ShareSnapshot } from "@/components/share/article-share-runner";
 import { articleUrl } from "@/libs/article-url";
 import { shareDescription } from "@/libs/share-description";
 import SingleScreenLoader from "@/components/skeleton/single-screen-loader";
@@ -142,8 +142,8 @@ useViewTracker(routeId,setViews)
             <Text className="text-base text-gray-500 mb-4">
 {format(parseISO(data.created_at), "dd MMM yyyy")}
             </Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Share article as image"
-              disabled={loading || !!error || !data || String(data.id) !== routeId}
+            <Pressable accessibilityRole="button" accessibilityLabel="Share article"
+              disabled={!!shareSnapshot || loading || !!error || !data || String(data.id) !== routeId}
               onPress={() => {
                 try {
                   setShareSnapshot({ article: { ...data }, url: articleUrl(routeType, routeParam, routeId),
@@ -170,8 +170,8 @@ useViewTracker(routeId,setViews)
           </Markdown>
         </View>
       </ScrollView>
-      {shareSnapshot && <NewsSharePreview key={`${shareSnapshot.article.id}-${shareSnapshot.url}`}
-        snapshot={shareSnapshot} onClose={() => setShareSnapshot(null)} />}
+      {shareSnapshot && <ArticleShareRunner key={`${shareSnapshot.article.id}-${shareSnapshot.url}`}
+        snapshot={shareSnapshot} onDone={() => setShareSnapshot(null)} />}
     </SafeAreaView>
   );
 };
