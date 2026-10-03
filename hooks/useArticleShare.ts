@@ -1,34 +1,27 @@
-import { useRef, useState, type RefObject } from 'react';
-import { Platform, View } from 'react-native';
+import { useRef, type RefObject } from 'react';
+import { Platform, Share, View } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 
 export function useArticleShare(cardRef: RefObject<View | null>) {
-  const lock = useRef(false);
   const lastCapture = useRef<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  async function shareImage(ready: boolean) {
-    if (lock.current || !ready || !cardRef.current) return;
-    lock.current = true;
-    setBusy(true);
-    try {
-      if (Platform.OS === 'web' || !(await Sharing.isAvailableAsync())) {
-        throw new Error('Image sharing needs the native app. You can still copy the article link.');
-      }
-      const raw = await captureRef(cardRef, {
-        format: 'png', result: 'tmpfile', width: 1080, height: 1620,
-      });
-      if (lastCapture.current) releaseCapture(lastCapture.current);
-      lastCapture.current = raw;
-      await Sharing.shareAsync(raw.startsWith('file://') ? raw : `file://${raw}`, {
-        mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Share SRS News',
-      });
-      // Retain until next capture/app exit: targets may read after sheet dismissal.
-    } finally {
-      lock.current = false;
-      setBusy(false);
+  async function shareCard(title: string, url: string) {
+    if (Platform.OS === 'web' || !cardRef.current) {
+      throw new Error('Sharing needs the native app.');
     }
+    const raw = await captureRef(cardRef, { format: 'png', result: 'tmpfile', width: 1080, height: 1620 });
+    if (lastCapture.current) releaseCapture(lastCapture.current);
+    lastCapture.current = raw;
+    const fileUrl = raw.startsWith('file://') ? raw : `file://${raw}`;
+    const message = `${title}\n${url}`;
+    if (Platform.OS === 'ios') {
+      // iOS share sheet receives the image and the text (title + link) together.
+      await Share.share({ message, url: fileUrl });
+    } else {
+      // React Native's Share ignores files on Android; expo-sharing sends the image only.
+      await Sharing.shareAsync(fileUrl, { mimeType: 'image/png', dialogTitle: title });
+    }
+    // Keep the file until the next capture: targets may read it after the sheet closes.
   }
-  return { busy, shareImage };
+  return { shareCard };
 }
-
