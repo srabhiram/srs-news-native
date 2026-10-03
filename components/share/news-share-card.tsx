@@ -1,57 +1,42 @@
-import React, { forwardRef } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { forwardRef, useState } from 'react';
+import { Image, Text, View } from 'react-native';
 import type { NewsItem } from '@/store/news/news-type';
 
+const DESCRIPTION_LINE_HEIGHT = 24;
 type Props = {
   article: NewsItem;
   description: string;
   imageUri?: string;
-  label: string;
-  published: string;
   onLayout: () => void;
   onImageLoad: () => void;
   onImageError: () => void;
-  onLogoLoad: () => void;
-  onLogoError: () => void;
-  onTextHeight: (kind: 'title' | 'description', height: number) => void;
 };
 export const NewsShareCard = forwardRef<View, Props>(function NewsShareCard(p, ref) {
+  const [descriptionLines, setDescriptionLines] = useState(1);
   return (
-    <View ref={ref} collapsable={false} onLayout={p.onLayout} style={styles.card}>
+    <View ref={ref} collapsable={false} onLayout={p.onLayout} className="w-[360px] h-[540px] bg-white overflow-hidden">
       {p.imageUri ? (
         <Image source={{ uri: p.imageUri }} resizeMode="contain" onLoad={p.onImageLoad}
-          onError={p.onImageError} style={styles.photo} />
+          onError={p.onImageError} className="w-[360px] h-[180px] bg-[#f3f3f3]" />
       ) : (
-        <View style={[styles.photo, styles.center]}><Text style={styles.fallback}>SRS News</Text></View>
+        <View className="w-[360px] h-[180px] bg-[#f3f3f3] items-center justify-center"><Text className="text-[28px] text-[#555] font-bold">SRS News</Text></View>
       )}
-      <View style={styles.band}>
-        <Image source={require('@/assets/images/icon.png')} resizeMode="contain"
-          onLoad={p.onLogoLoad} onError={p.onLogoError} style={styles.logo} />
-      </View>
-      <View style={styles.copy}>
-        <Text allowFontScaling={false} onLayout={e => p.onTextHeight('title', e.nativeEvent.layout.height)}
-          style={styles.title}>{p.article.news_title}</Text>
-        <Text key={p.description} allowFontScaling={false} onLayout={e => p.onTextHeight('description', e.nativeEvent.layout.height)}
-          style={styles.description}>{p.description}</Text>
-        <View style={styles.footer}>
-          <Text allowFontScaling={false} style={styles.meta}>{p.label} · {p.published}</Text>
-          <Text allowFontScaling={false} style={styles.meta}>SRS News · srsnews.in</Text>
+      <View className="h-[360px] px-4 py-3">
+        <Text allowFontScaling={false} numberOfLines={4} ellipsizeMode="tail"
+          className="text-[#171717] text-[22px] leading-[30px] font-bold shrink-0">{p.article.news_title}</Text>
+        <View className="flex-1 min-h-0 mt-2 overflow-hidden" onLayout={e => {
+          // Use the actual space left by the title, keeping the footer visible.
+          const lines = Math.max(1, Math.floor(e.nativeEvent.layout.height / DESCRIPTION_LINE_HEIGHT));
+          setDescriptionLines(previous => previous === lines ? previous : lines);
+        }}>
+          <Text key={p.description} allowFontScaling={false}
+            numberOfLines={descriptionLines} ellipsizeMode="tail"
+            className="text-[#444] text-[16px] leading-[24px]">{p.description}</Text>
+        </View>
+        <View className="shrink-0 pt-2">
+          <Text allowFontScaling={false} className="text-[#555] text-[12px] leading-[16px] font-semibold">srsnews.in</Text>
         </View>
       </View>
     </View>
   );
 });
-const styles = StyleSheet.create({
-  card: { width: 360, height: 540, backgroundColor: '#fff' },
-  photo: { width: 360, height: 180, backgroundColor: '#f3f3f3' },
-  center: { alignItems: 'center', justifyContent: 'center' },
-  fallback: { fontSize: 28, color: '#555', fontWeight: '700' },
-  band: { height: 54, backgroundColor: '#151515', alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 46, height: 46 },
-  copy: { height: 306, paddingHorizontal: 16, paddingVertical: 12 },
-  title: { color: '#171717', fontSize: 22, lineHeight: 30, fontWeight: '700', flexShrink: 0 },
-  description: { color: '#444', fontSize: 16, lineHeight: 24, marginTop: 8, flexShrink: 0 },
-  footer: { marginTop: 'auto', paddingTop: 8 },
-  meta: { color: '#555', fontSize: 11, lineHeight: 16 },
-});
-
