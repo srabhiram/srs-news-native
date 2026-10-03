@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { format, isValid, parseISO } from 'date-fns';
 import { NewsShareCard } from './news-share-card';
 import { useArticleShare } from '@/hooks/useArticleShare';
-import { categoryNames, distname } from '@/libs/navbar-items';
 import type { NewsItem } from '@/store/news/news-type';
 
 export type ShareSnapshot = { article: NewsItem; url: string; description: string };
@@ -16,19 +14,14 @@ export function NewsSharePreview({ snapshot, onClose }: { snapshot: ShareSnapsho
   const [imageUri, setImageUri] = useState(candidate);
   const [imageLoaded, setImageLoaded] = useState(!candidate);
   const [imageNotice, setImageNotice] = useState('');
-  const [logoLoaded, setLogoLoaded] = useState(false);
-  const [logoError, setLogoError] = useState(false);
   const [laidOut, setLaidOut] = useState(false);
   const [description, setDescription] = useState(snapshot.description);
-  const [heights, setHeights] = useState({ title: 0, description: 0 });
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [approved, setApproved] = useState(false);
   const [imageAttempt, setImageAttempt] = useState(0);
-  const textFits = heights.title > 0 && heights.description > 0 && heights.title <= 120
-    && heights.description <= 120 && heights.title + heights.description + 8 <= 242;
   // The card uses platform Telugu-capable system fonts, not async custom fonts.
-  const ready = laidOut && logoLoaded && imageLoaded && textFits && !!description.trim() && approved;
+  const ready = laidOut && imageLoaded && approved;
   useEffect(() => {
     if (!imageUri || imageLoaded) return;
     const timeout = setTimeout(() => {
@@ -38,10 +31,6 @@ export function NewsSharePreview({ snapshot, onClose }: { snapshot: ShareSnapsho
     }, 10000);
     return () => clearTimeout(timeout);
   }, [imageUri, imageLoaded, imageAttempt]);
-  const date = parseISO(snapshot.article.created_at || '');
-  const published = isValid(date) ? format(date, 'dd MMM yyyy') : 'SRS News';
-  const label = (snapshot.article.district ? distname(snapshot.article.district)
-    : categoryNames(snapshot.article.category)) || 'SRS News';
   async function exportImage() {
     setError('');
     try { await shareImage(ready); }
@@ -59,27 +48,22 @@ export function NewsSharePreview({ snapshot, onClose }: { snapshot: ShareSnapsho
           <Text style={styles.note}>Review the photo and excerpt. The image has no tappable link; copy the link for your caption.</Text>
           <ScrollView horizontal contentContainerStyle={styles.cardContainer}>
             <NewsShareCard key={imageAttempt} ref={cardRef} article={snapshot.article} description={description}
-              imageUri={imageUri} label={label} published={published} onLayout={() => setLaidOut(true)}
-              onLogoLoad={() => setLogoLoaded(true)} onLogoError={() => { setLogoError(true); setLogoLoaded(false); }}
+              imageUri={imageUri} onLayout={() => setLaidOut(true)}
               onImageLoad={() => setImageLoaded(true)}
-              onImageError={() => { setImageUri(undefined); setImageLoaded(true); setApproved(false); setImageNotice('Photo unavailable. Preview uses the SRS News fallback.'); }}
-              onTextHeight={(kind, height) => setHeights(previous => previous[kind] === height ? previous : { ...previous, [kind]: height })} />
+              onImageError={() => { setImageUri(undefined); setImageLoaded(true); setApproved(false); setImageNotice('Photo unavailable. Preview uses the SRS News fallback.'); }} />
           </ScrollView>
           {!!imageNotice && <Text style={styles.note}>{imageNotice}</Text>}
           {!!imageNotice && candidate && <Pressable accessibilityRole="button" disabled={busy} onPress={() => {
             setImageUri(candidate); setImageLoaded(false); setImageNotice(''); setApproved(false);
-            setLogoLoaded(false); setLaidOut(false); setImageAttempt(n => n + 1);
+            setLaidOut(false); setImageAttempt(n => n + 1);
           }}><Text style={styles.link}>Retry photo</Text></Pressable>}
           <Text style={styles.label}>Description (article excerpt, not an automatic summary)</Text>
           <TextInput accessibilityLabel="Share card description" multiline editable={!busy} value={description}
             style={styles.input} onChangeText={value => {
-              setDescription(value); setApproved(false); setHeights(previous => ({ ...previous, description: 0 }));
+              setDescription(value); setApproved(false);
             }} />
-          {!description.trim() && <Text style={styles.error}>Add a short description before sharing.</Text>}
-          {heights.title > 120 && <Text style={styles.error}>Title is too long for this card. Image export is blocked; copy the link instead.</Text>}
-          {heights.description > 0 && !textFits && <Text style={styles.error}>Text does not fit. Shorten the description. Nothing will be clipped in an exported image.</Text>}
-          {logoError && <Text style={styles.error}>Logo failed to load. Close and reopen the preview.</Text>}
-          {(!imageLoaded || !logoLoaded || !laidOut) && !logoError && <ActivityIndicator accessibilityLabel="Preparing card" />}
+          <Text style={styles.note}>Text fills the available card space. Long titles and descriptions end with an ellipsis; they never block export.</Text>
+          {(!imageLoaded || !laidOut) && <ActivityIndicator accessibilityLabel="Preparing card" />}
           <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: approved, disabled: busy }}
             disabled={busy} onPress={() => setApproved(v => !v)} style={styles.review}>
             <Text>{approved ? '☑' : '☐'} I reviewed the photo, title and description</Text>
@@ -117,4 +101,3 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
   secondary: { padding: 16, backgroundColor: '#fff', borderRadius: 8, alignItems: 'center', marginTop: 10 },
 });
-
